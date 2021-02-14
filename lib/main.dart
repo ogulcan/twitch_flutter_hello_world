@@ -1,113 +1,124 @@
 import 'package:flutter/material.dart';
-import 'package:english_words/english_words.dart';
-import 'package:hello/detail.dart';
+import 'package:hello/add.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
-void main() => runApp(MyApp());
+void main() => runApp(MyTodoListApp());
 
-class MyApp extends StatelessWidget {
-  int a = 5;
+class MyTodoListApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    //final WordPair wordPair = WordPair.random();
-    print(a);
-
     return MaterialApp(
-      title: 'Startup Name Generator',
-      theme: ThemeData(
-        primaryColor: Colors.black,
-        accentColor: Colors.red,
-        secondaryHeaderColor: Colors.purple
-      ),
-      home: RandomWords(),
+      title: "To-do",
+      home: MyHomePage(),
     );
   }
 }
 
-class RandomWords extends StatefulWidget {
+class MyHomePage extends StatefulWidget {
   @override
-  _RandomWordsState createState() => _RandomWordsState();
+  _MyHomePageState createState() => _MyHomePageState(); 
 }
 
-class _RandomWordsState extends State<RandomWords> {
-  final _suggestions = <WordPair>[];
-  final _saved = Set<WordPair>();
-  final _biggerFont = TextStyle(fontSize: 18.0);
-  final _smallFont = TextStyle();
-
-  Widget _buildSuggestions() {
-    return ListView.builder(
-      padding: EdgeInsets.all(16.0),
-      itemBuilder: (context, i) {
-        if (i.isOdd) return Divider();
-
-        final index = i ~/ 2; /*3*/
-        if (index >= _suggestions.length) {
-          _suggestions.addAll(generateWordPairs().take(10));
-        }
-        return _buildRow(_suggestions[index]);
-      });
-  }
-
-  Widget _buildRow(WordPair pair) {
-    final alreadySaved = _saved.contains(pair);
-    return ListTile(
-      title: Text(
-        pair.asPascalCase,
-        style: _biggerFont,
-        textAlign: TextAlign.right,
-      ),
-      trailing: Icon(
-        alreadySaved ? Icons.favorite : Icons.favorite_border,
-        color: alreadySaved ? Colors.red : Colors.yellow,
-      ),
-      subtitle: Text(
-        pair.asPascalCase,
-        style: _smallFont,
-        textAlign: TextAlign.left,
-      ),
-      onTap: () {
-        setState(() {
-          if (alreadySaved) {
-            _saved.remove(pair);
-          } else {
-            _saved.add(pair);
-          }
-        });
-      }
-    );
-  }
+class _MyHomePageState extends State<MyHomePage> {
+  List<String> items = [];
 
   @override
   Widget build(BuildContext context) {
-    //final wordPair = WordPair.random();
-    //return Text(wordPair.asPascalCase);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Name Generator'),
-        actions: [
-          IconButton(icon: Icon(Icons.list), onPressed: _pushSaved, tooltip: "AAAAA"),
-        ],        
-      ),
-      body: _buildSuggestions(),
+    return SafeArea(
+        child: Scaffold(
+          body: Column(children: <Widget>[
+            MyAppBar(),
+            Expanded(child: 
+              ListWidget(items),
+            )
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          tooltip: 'Add', // used by assistive technologies
+          child: Icon(Icons.add),
+          onPressed: () => _pushAddPage(context),
+        ),
+      )
     );
   }
 
-  void _pushSaved() {
-    Navigator.of(context).push(
+  Future<void> _pushAddPage(BuildContext context) async {
+    final value = await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (BuildContext context) {
-          Set<String> _savedItems = {};
-          print(_saved.length);
-          _saved.forEach((WordPair p) {
-              _savedItems.add(p.asPascalCase);
-            }
-          );
-          print(_savedItems.length);
-
-          return Detail(_savedItems);         
+          return AddPage();
         }
       )
+    );
+    getItems().then((i) {
+      items = i;
+      setState(() {
+        
+      });
+    });
+    // getItems().then((i) ({
+    //   setState((i) {
+    //     items = i;
+    //   })
+    // }));
+  }
+
+  Future<List<String>> getItems() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    var itemsString = prefs.getString("items");
+    var items = [];
+    if (itemsString != null) {
+      List<dynamic> dynamicItems = jsonDecode(itemsString);
+      items = dynamicItems.cast<String>();
+    }
+    print(items.length);
+    return items;
+  }
+}
+
+class ListWidget extends StatefulWidget {
+  List<String> items = [];
+
+  ListWidget(List<String> items) {
+    this.items = items;
+  }
+
+  @override
+  _ListWidgetState createState() => _ListWidgetState(); 
+}
+
+class _ListWidgetState extends State<ListWidget> {
+
+  @override
+  Widget build(BuildContext context) {
+    final tiles = this.widget.items.map(
+      (String word) {
+        return ListTile(
+          title: Text(
+            word,
+          ),
+        );
+      },
+    );
+    final divided = ListTile.divideTiles(context: context, tiles: tiles).toList();
+    return ListView(children: divided);
+  }
+}
+
+class MyAppBar extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 56.0,
+      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+      decoration: BoxDecoration(color: Colors.blue[800]),
+      child: Row(children: <Widget>
+      [
+        Expanded(child: Text("To-dos", style: TextStyle(color: Colors.white, fontSize: 20.0))),
+        //IconButton(color: Colors.white, icon: Icon(Icons.add), onPressed: null),
+      ]),
     );
   }
 }
