@@ -1,17 +1,20 @@
-class TodoItem {
-  final String text; 
-  TodoItem({this.text});
-  
-  factory TodoItem.fromJson(Map<String, dynamic> json) => _$TodoItemFromJson(json);
-  Map<String, dynamic> toJson() => _$TodoItemToJson(this);
-}
+class Todo {
+  String title;
+  int timestamp;
 
-TodoItem _$TodoItemFromJson(Map<String, dynamic> json) {
-  return TodoItem(
-    text: json['text'] as String,
-  );
-}
+  Todo(this.title) {
+    this.timestamp = DateTime.now().millisecondsSinceEpoch;
+  }
 
-Map<String, dynamic> _$TodoItemToJson(TodoItem instance) => <String, dynamic>{
-  'text': instance.text,
-};
+  Todo.fromJson(Map<String, dynamic> json)
+      : title = json['title'],
+        timestamp = json['timestamp'];
+
+  Map<String, dynamic> toJson() =>
+    {
+      'title': title,
+      'timestamp': timestamp,
+    };
+
+  String toJsonString() => '{"title": "$title", "timestamp": $timestamp}';
+}
